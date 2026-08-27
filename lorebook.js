@@ -152,53 +152,6 @@ function showLorebookPage() {
             });
         }
 
-        // 世界书导入加锁
-        function requestImportLorebook() {
-            if (sessionStorage.getItem('import_lorebook_unlocked') === '1') {
-                document.getElementById('lorebook-import').click();
-                return;
-            }
-            // 创建密码验证弹窗
-            const existing = document.getElementById('import-lock-modal');
-            if (existing) existing.remove();
-            
-            const overlay = document.createElement('div');
-            overlay.id = 'import-lock-modal';
-            overlay.dataset.target = 'lorebook';
-            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;z-index:99999;';
-            overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-            
-            overlay.innerHTML = `
-                <div style="background:#fff;border-radius:14px;padding:28px 24px;width:280px;box-shadow:0 8px 30px rgba(0,0,0,0.08);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-                    <div style="text-align:center;margin-bottom:20px;">
-                        <svg viewBox="0 0 24 24" style="width:32px;height:32px;fill:none;stroke:#333;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin-bottom:8px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        <div style="font-size:15px;font-weight:600;color:#262626;letter-spacing:0.3px;">导入需要验证</div>
-                        <div style="font-size:12px;color:#8e8e8e;margin-top:4px;">请输入密码以解锁导入功能</div>
-                    </div>
-                    <input type="password" id="import-lock-pwd" placeholder="请输入密码" 
-                        style="width:100%;padding:12px 14px;border:1px solid #efefef;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;background:#fafafa;transition:border 0.2s;"
-                        onfocus="this.style.borderColor='#333'" onblur="this.style.borderColor='#efefef'">
-                    <div id="import-lock-error" style="color:#ff3b30;font-size:12px;margin-top:6px;text-align:center;min-height:16px;"></div>
-                    <div style="display:flex;gap:10px;margin-top:14px;">
-                        <div onclick="this.closest('#import-lock-modal').remove()" 
-                            style="flex:1;text-align:center;padding:11px;border-radius:10px;font-size:14px;color:#8e8e8e;background:#f5f5f5;cursor:pointer;">取消</div>
-                        <div onclick="verifyImportPassword()" 
-                            style="flex:1;text-align:center;padding:11px;border-radius:10px;font-size:14px;color:#fff;background:#262626;cursor:pointer;font-weight:500;">确认</div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(overlay);
-            setTimeout(() => {
-                const pwdInput = document.getElementById('import-lock-pwd');
-                if (pwdInput) {
-                    pwdInput.focus();
-                    pwdInput.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') verifyImportPassword();
-                    });
-                }
-            }, 100);
-        }
 
 
         // 导入世界书文件（支持 .json 和 .txt）
