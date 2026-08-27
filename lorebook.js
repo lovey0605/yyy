@@ -153,6 +153,10 @@ function showLorebookPage() {
         }
 
 
+  // 世界书导入
+function requestImportLorebook() {
+    document.getElementById('lorebook-import').click();
+}
 
         // 导入世界书文件（支持 .json 和 .txt）
         function importLorebookFile(input) {
