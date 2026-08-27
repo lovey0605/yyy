@@ -153,9 +153,21 @@ function showLorebookPage() {
         }
 
 
-  // 世界书导入
+// 世界书导入
 function requestImportLorebook() {
-    document.getElementById('lorebook-import').click();
+    // 1. 触发隐藏的文件输入
+    const input = document.getElementById('lorebook-import');
+    if (input) {
+        input.click();
+    }
+    // 2. 移除按钮焦点，消除高亮（如果有事件对象）
+    if (window.event && window.event.target) {
+        window.event.target.blur();
+    }
+    // 3. 备用：主动移除所有按钮的焦点
+    if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+    }
 }
 
         // 导入世界书文件（支持 .json 和 .txt）
