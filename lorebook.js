@@ -169,91 +169,204 @@ function requestImportLorebook() {
         document.activeElement.blur();
     }
 }
-
-        // 导入世界书文件（支持 .json 和 .txt）
-        function importLorebookFile(input) {
-            const file = input.files[0];
-            if (!file) return;
-            
-            const fileName = file.name.toLowerCase();
-            const isTxt = fileName.endsWith('.txt');
-            
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    let name = file.name.replace(/\.(json|txt)$/i, '');
-                    
-                    if (isTxt) {
-                        // TXT 格式：按行解析为词条
-                        const text = e.target.result;
-                        const lines = text.split(/\r?\n/).filter(l => l.trim());
-                        
-                        if (lines.length === 0) {
-                            alert('❌ 文件为空');
-                            input.value = '';
-                            return;
-                        }
-                        
-                        // 构建 entries 对象
-                        const entries = {};
-                        let entryIndex = 0;
-                        let currentKey = '';
-                        let currentContent = '';
-                        
-                        for (const line of lines) {
-                            // 支持格式1：key: content（冒号分隔的键值对）
-                            // 支持格式2：key:: content（双冒号分隔，SillyTavern风格）
-                            // 支持格式3：纯文本，每行作为一个词条
-                            const colonMatch = line.match(/^(.+?)::?\s+(.+)$/);
-                            
-                            if (colonMatch) {
-                                // 有键值对格式
-                                const key = colonMatch[1].trim();
-                                const content = colonMatch[2].trim();
-                                entries[String(entryIndex)] = {
-                                    uid: entryIndex,
-                                    key: key.split(/[,，、]/).map(k => k.trim()).filter(k => k),
-                                    content: content,
-                                    comment: key,
-                                    enabled: true
-                                };
-                                entryIndex++;
-                            } else {
-                                // 纯文本行，整行作为 content，第一个词作为 key
-                                const trimmed = line.trim();
-                                const firstWord = trimmed.split(/[\s,，、]/)[0];
-                                entries[String(entryIndex)] = {
-                                    uid: entryIndex,
-                                    key: [firstWord],
-                                    content: trimmed,
-                                    comment: `词条 #${entryIndex}`,
-                                    enabled: true
-                                };
-                                entryIndex++;
-                            }
-                        }
-                        
-                        const newId = await db.lorebooks.add({
-                            name: name,
-                            content: { entries: entries },
-                            scope: 'personal',
-                            created_at: Date.now()
-                        });
-                        
-                        alert(`✅ 成功导入: ${name}（${Object.keys(entries).length} 个词条）`);
-                        loadLorebookList();
-                        showLorebookDetail(newId);
-                        
+// 导入世界书文件（支持 .json、.txt、.docx）
+function importLorebookFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const fileName = file.name.toLowerCase();
+    const isTxt = fileName.endsWith('.txt');
+    const isDocx = fileName.endsWith('.docx');
+    
+    // ===== 处理 .docx 文件 =====
+    if (isDocx) {
+        // 检查 JSZip 是否可用
+        if (typeof JSZip === 'undefined') {
+            alert('❌ 未加载 JSZip 库，无法解析 Word 文档。请刷新页面后重试。');
+            input.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const arrayBuffer = e.target.result;
+                const zip = await JSZip.loadAsync(arrayBuffer);
+                const docFile = zip.file("word/document.xml");
+                if (!docFile) {
+                    alert('❌ 无法解析 Word 文档，缺少 document.xml');
+                    input.value = '';
+                    return;
+                }
+                const xmlText = await docFile.async("text");
+                
+                // 提取所有 <w:t> 标签内的文本
+                const textMatches = xmlText.match(/<w:t[^>]*>([^<]*)<\/w:t>/g);
+                if (!textMatches) {
+                    alert('❌ 未找到文本内容');
+                    input.value = '';
+                    return;
+                }
+                // 提取纯文本
+                let fullText = '';
+                for (const match of textMatches) {
+                    const content = match.replace(/<w:t[^>]*>/, '').replace(/<\/w:t>/, '');
+                    fullText += content;
+                }
+                
+                // 按段落分割（<w:p> 表示段落）
+                const paragraphs = xmlText.split(/<\/w:p>/);
+                const lines = paragraphs.map(p => {
+                    const textInPara = p.match(/<w:t[^>]*>([^<]*)<\/w:t>/g);
+                    if (!textInPara) return '';
+                    return textInPara.map(t => t.replace(/<w:t[^>]*>/, '').replace(/<\/w:t>/, '')).join('').trim();
+                }).filter(line => line.trim());
+                
+                if (lines.length === 0) {
+                    alert('❌ Word 文档中没有文本');
+                    input.value = '';
+                    return;
+                }
+                
+                // 构建 entries（与 txt 逻辑相同）
+                let name = file.name.replace(/\.(docx)$/i, '');
+                const entries = {};
+                let entryIndex = 0;
+                for (const line of lines) {
+                    const colonMatch = line.match(/^(.+?)::?\s+(.+)$/);
+                    if (colonMatch) {
+                        const key = colonMatch[1].trim();
+                        const content = colonMatch[2].trim();
+                        entries[String(entryIndex)] = {
+                            uid: entryIndex,
+                            key: key.split(/[,，、]/).map(k => k.trim()).filter(k => k),
+                            content: content,
+                            comment: key,
+                            enabled: true
+                        };
+                        entryIndex++;
                     } else {
-                        // JSON 格式
-                        const json = JSON.parse(e.target.result);
-                        // 简单的格式校验：通常有 entries
-                        if (!json.entries && !Array.isArray(json)) {
-                            if(!confirm("这似乎不是标准的 SillyTavern 格式，确定要导入吗？")) {
-                                input.value = '';
-                                return;
-                            }
-                        }
+                        const trimmed = line.trim();
+                        const firstWord = trimmed.split(/[\s,，、]/)[0];
+                        entries[String(entryIndex)] = {
+                            uid: entryIndex,
+                            key: [firstWord],
+                            content: trimmed,
+                            comment: `词条 #${entryIndex}`,
+                            enabled: true
+                        };
+                        entryIndex++;
+                    }
+                }
+                
+                const newId = await db.lorebooks.add({
+                    name: name,
+                    content: { entries: entries },
+                    scope: 'personal',
+                    created_at: Date.now()
+                });
+                alert(`✅ 成功导入: ${name}（${Object.keys(entries).length} 个词条）`);
+                loadLorebookList();
+                showLorebookDetail(newId);
+                input.value = '';
+            } catch (err) {
+                alert('❌ 解析 Word 文档失败: ' + err.message);
+                input.value = '';
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        return; // 结束处理
+    }
+    
+    // ===== 处理 .txt 或 .json =====
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            let name = file.name.replace(/\.(json|txt)$/i, '');
+            
+            if (isTxt) {
+                // TXT 格式：按行解析为词条
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/).filter(l => l.trim());
+                
+                if (lines.length === 0) {
+                    alert('❌ 文件为空');
+                    input.value = '';
+                    return;
+                }
+                
+                const entries = {};
+                let entryIndex = 0;
+                for (const line of lines) {
+                    const colonMatch = line.match(/^(.+?)::?\s+(.+)$/);
+                    if (colonMatch) {
+                        const key = colonMatch[1].trim();
+                        const content = colonMatch[2].trim();
+                        entries[String(entryIndex)] = {
+                            uid: entryIndex,
+                            key: key.split(/[,，、]/).map(k => k.trim()).filter(k => k),
+                            content: content,
+                            comment: key,
+                            enabled: true
+                        };
+                        entryIndex++;
+                    } else {
+                        const trimmed = line.trim();
+                        const firstWord = trimmed.split(/[\s,，、]/)[0];
+                        entries[String(entryIndex)] = {
+                            uid: entryIndex,
+                            key: [firstWord],
+                            content: trimmed,
+                            comment: `词条 #${entryIndex}`,
+                            enabled: true
+                        };
+                        entryIndex++;
+                    }
+                }
+                
+                const newId = await db.lorebooks.add({
+                    name: name,
+                    content: { entries: entries },
+                    scope: 'personal',
+                    created_at: Date.now()
+                });
+                alert(`✅ 成功导入: ${name}（${Object.keys(entries).length} 个词条）`);
+                loadLorebookList();
+                showLorebookDetail(newId);
+                
+            } else {
+                // JSON 格式
+                const json = JSON.parse(e.target.result);
+                if (!json.entries && !Array.isArray(json)) {
+                    if(!confirm("这似乎不是标准的 SillyTavern 格式，确定要导入吗？")) {
+                        input.value = '';
+                        return;
+                    }
+                }
+                if (json.name) name = json.name;
+                
+                const newId = await db.lorebooks.add({
+                    name: name,
+                    content: json,
+                    scope: 'personal',
+                    created_at: Date.now()
+                });
+                alert(`✅ 成功导入: ${name}`);
+                loadLorebookList();
+                showLorebookDetail(newId);
+            }
+        } catch (err) {
+            alert('❌ 解析失败: ' + err.message);
+        }
+    };
+    
+    if (isTxt) {
+        reader.readAsText(file);
+    } else {
+        reader.readAsText(file); // JSON 也按文本读取
+    }
+    input.value = '';
+}
                         
                         if (json.name) name = json.name;
 
