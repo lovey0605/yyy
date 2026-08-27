@@ -201,19 +201,6 @@ function showLorebookPage() {
         }
 
 
-// ===== 密码验证函数 =====
-function verifyImportPassword() {
-    const pwd = document.getElementById('import-lock-pwd').value;
-    // ⚠️ 重要：把下面的 '你的密码' 改成你想要的密码，比如 '123456'
-    if (pwd === '1234') {
-        sessionStorage.setItem('import_lorebook_unlocked', '1');
-        document.getElementById('import-lock-modal').remove();
-        document.getElementById('lorebook-import').click();
-    } else {
-        document.getElementById('import-lock-error').textContent = '密码错误，请重试';
-    }
-}
-
         // 导入世界书文件（支持 .json 和 .txt）
         function importLorebookFile(input) {
             const file = input.files[0];
