@@ -276,34 +276,7 @@ function requestImportLorebook() {
         }
 
     
-    if (isTxt) {
-        reader.readAsText(file);
-    } else {
-        reader.readAsText(file); // JSON 也按文本读取
-    }
-    input.value = '';
-}
-                        
-                        if (json.name) name = json.name;
 
-                        const newId = await db.lorebooks.add({
-                            name: name,
-                            content: json,
-                            scope: 'personal',
-                            created_at: Date.now()
-                        });
-                        
-                        alert(`✅ 成功导入: ${name}`);
-                        loadLorebookList();
-                        showLorebookDetail(newId);
-                    }
-                } catch (err) {
-                    alert('❌ 解析失败: ' + err.message);
-                }
-            };
-            reader.readAsText(file);
-            input.value = '';
-        }
 
         async function createNewLorebook() {
             const name = prompt("请输入新世界书名称：", "新世界书");
