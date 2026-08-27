@@ -1393,8 +1393,7 @@
     </div>
     
     <!-- 隐藏的数据导入文件选择器 -->
-    <input type="file" id="import-data-input" style="display:none;" accept=".json" onchange="importAllData(this)">
-
+<input type="file" id="lorebook-import" style="display:none;" accept=".json,.txt,.docx" onchange="importLorebookFile(this)">
     <!-- 编辑消息弹窗 -->
     <div class="modal-overlay" id="edit-msg-modal" style="display:none;" onclick="if(event.target===this)closeEditMsgModal()">
         <div class="modal-box" style="max-width:360px;">
