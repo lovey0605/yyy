@@ -61,7 +61,7 @@
                 // 立即发送第一条通知
                 new Notification("测试通知", {
                     body: "如果你能看到这条通知，说明系统通知功能正常！",
-                    icon: 'https://img.heliar.top/file/1770541813634_无标题434_20260208170943.png'
+                    icon: 'https://pic1.imgdb.cn/i/034EFfexNMNi50C0gHCHt7.jpg'
                 });
                 showDebugToast("✓ 立即发送通知！5秒后再发一条", true);
                 
@@ -69,7 +69,7 @@
                 setTimeout(() => {
                     new Notification("延迟测试通知", {
                         body: "这是5秒后发送的通知，如果在后台也能收到，说明后台推送正常！",
-                        icon: 'https://img.heliar.top/file/1770541813634_无标题434_20260208170943.png',
+                        icon: 'https://pic1.imgdb.cn/i/034EFfexNMNi50C0gHCHt7.jpg',
                         tag: 'delayed-test'
                     });
                     showDebugToast("✓ 5秒延迟通知已发送！", true);
@@ -82,7 +82,7 @@
                     if (permission === "granted") {
                         new Notification("测试通知", {
                             body: "权限已授予！系统通知功能正常工作",
-                            icon: 'https://img.heliar.top/file/1770541813634_无标题434_20260208170943.png'
+                            icon: 'https://pic1.imgdb.cn/i/034EFfexNMNi50C0gHCHt7.jpg'
                         });
                         showDebugToast("✓ 权限已授予！通知已发送", true);
                     } else {
