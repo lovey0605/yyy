@@ -26,7 +26,7 @@
                 if ("Notification" in window) {
                     Notification.requestPermission().then(permission => {
                         if (permission === "granted") {
-                            new Notification("系统通知已开启", { body: "即使在后台，您也能收到新消息提醒了~" });
+                            sendNotification("系统通知已开启", { body: "即使在后台，您也能收到新消息提醒了~" });
                         } else {
                             alert("请在浏览器弹窗中点击【允许】，否则无法收到系统通知哦！");
                         }
@@ -59,7 +59,7 @@
             
             if (Notification.permission === "granted") {
                 // 立即发送第一条通知
-                new Notification("测试通知", {
+                sendNotification("测试通知", {
                     body: "如果你能看到这条通知，说明系统通知功能正常！",
                     icon: 'https://pic1.imgdb.cn/i/034EFfexNMNi50C0gHCHt7.jpg'
                 });
@@ -67,7 +67,7 @@
                 
                 // 5秒后发送第二条通知
                 setTimeout(() => {
-                    new Notification("延迟测试通知", {
+                    sendNotification("延迟测试通知", {
                         body: "这是5秒后发送的通知，如果在后台也能收到，说明后台推送正常！",
                         icon: 'https://pic1.imgdb.cn/i/034EFfexNMNi50C0gHCHt7.jpg',
                         tag: 'delayed-test'
@@ -80,7 +80,7 @@
                 Notification.requestPermission().then(permission => {
                     console.log('[Test] Permission request result:', permission);
                     if (permission === "granted") {
-                        new Notification("测试通知", {
+                        sendNotification("测试通知", {
                             body: "权限已授予！系统通知功能正常工作",
                             icon: 'https://pic1.imgdb.cn/i/034EFfexNMNi50C0gHCHt7.jpg'
                         });
@@ -91,6 +91,29 @@
                 });
             }
         }
+// 添加一个统一的发送通知函数
+async function sendNotification(title, options = {}) {
+    try {
+        // PWA环境：通过 Service Worker 发送
+        if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (registration) {
+                await registration.showNotification(title, {
+                    icon: 'https://pic1.imgdb.cn/i/034EFfexNMNi50C0gHCHt7.jpg',
+                    ...options
+                });
+                return;
+            }
+        }
+        // 非PWA环境：使用构造函数
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, options);
+        }
+    } catch (err) {
+        console.error('[Notification] 发送失败:', err);
+    }
+}
+
 
         // 切换调试模式
         function toggleDebugMode(checkbox) {
